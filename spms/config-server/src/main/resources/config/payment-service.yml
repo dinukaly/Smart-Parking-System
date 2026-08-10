@@ -1,0 +1,15 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: payment-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/spms_payments
+    username: spms_admin
+    password: spms_password
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
