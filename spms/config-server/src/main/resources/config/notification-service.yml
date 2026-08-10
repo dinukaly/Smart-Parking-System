@@ -1,0 +1,9 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: notification-service
+
+# Note: Go doesn't natively use Eureka or Spring Config in the same way,
+# but we maintain the file here for consistency since we build a custom client.
