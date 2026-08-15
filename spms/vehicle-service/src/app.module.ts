@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { getTypeOrmConfig } from './config/typeorm.config';
 import { EurekaModule } from './eureka/eureka.module';
+import { VehiclesModule } from './vehicles/vehicles.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { EurekaModule } from './eureka/eureka.module';
       useFactory: getTypeOrmConfig,
     }),
     EurekaModule,
+    VehiclesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
