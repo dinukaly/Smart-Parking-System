@@ -31,3 +31,13 @@ springdoc:
     path: /v3/api-docs
   swagger-ui:
     path: /swagger-ui.html
+
+# JWT Configuration
+jwt:
+  keystore:
+    path: classpath:spms-jwt.jks
+    password: spms_store_pass
+    alias: spms-jwt
+  issuer: spms-user-service
+  access-token-expiry-ms: 900000      # 15 minutes
+  refresh-token-expiry-ms: 604800000  # 7 days
