@@ -41,12 +41,10 @@ eureka:
     service-url:
       defaultZone: http://localhost:8761/eureka/
 
-# RSA Asymmetric Public Key (2048-bit) for verification across all services
+# RSA Asymmetric Public Key for verification across all services
 jwt:
-  public-key: |
-    -----BEGIN PUBLIC KEY-----
-    MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAz8g...
-    -----END PUBLIC KEY-----
+  public-key-path: classpath:spms-jwt-public.pem
+  issuer: spms-user-service
 
 # Public endpoints (bypasses Spring Security authentication)
 gateway:

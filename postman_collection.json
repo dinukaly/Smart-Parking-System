@@ -40,6 +40,16 @@
       "key": "vehicleId",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "paymentServiceUrl",
+      "value": "http://localhost:8084",
+      "type": "string"
+    },
+    {
+      "key": "transactionId",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -1637,6 +1647,311 @@
               "raw": "{{baseUrl}}/api/parking/spaces/{{parkingSpaceId}}",
               "host": ["{{baseUrl}}"],
               "path": ["api", "parking", "spaces", "{{parkingSpaceId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payment Service",
+      "item": [
+        {
+          "name": "1. Process Payment - Success (201 Created)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Payment status is SUCCESS and receipt issued\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.eql(\"SUCCESS\");",
+                  "    pm.expect(jsonData.transactionId).to.be.a(\"string\");",
+                  "    pm.expect(jsonData.receipt).to.not.be.null;",
+                  "    pm.collectionVariables.set(\"transactionId\", jsonData.transactionId);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservationId\": \"res-mock-123\",\n  \"amount\": 7.50,\n  \"currency\": \"USD\",\n  \"paymentMethod\": \"MOCK_CARD\",\n  \"cardDetails\": {\n    \"cardNumber\": \"4111111111111111\",\n    \"expiryMonth\": \"12\",\n    \"expiryYear\": \"2028\",\n    \"cvv\": \"123\",\n    \"cardholderName\": \"John Doe\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/process",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "process"]
+            }
+          }
+        },
+        {
+          "name": "2. Process Payment - Invalid Card Luhn Failure (400 Bad Request)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400 Bad Request\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"Error message indicates Luhn check failure\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.include(\"Luhn check failed\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservationId\": \"res-mock-456\",\n  \"amount\": 10.00,\n  \"currency\": \"USD\",\n  \"paymentMethod\": \"MOCK_CARD\",\n  \"cardDetails\": {\n    \"cardNumber\": \"4111111111111112\",\n    \"expiryMonth\": \"12\",\n    \"expiryYear\": \"2028\",\n    \"cvv\": \"123\",\n    \"cardholderName\": \"John Doe\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/process",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "process"]
+            }
+          }
+        },
+        {
+          "name": "3. Process Payment - Duplicate Reservation Payment Conflict (409 Conflict)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 409 Conflict\", function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservationId\": \"res-mock-123\",\n  \"amount\": 7.50,\n  \"currency\": \"USD\",\n  \"paymentMethod\": \"MOCK_CARD\",\n  \"cardDetails\": {\n    \"cardNumber\": \"4111111111111111\",\n    \"expiryMonth\": \"12\",\n    \"expiryYear\": \"2028\",\n    \"cvv\": \"123\",\n    \"cardholderName\": \"John Doe\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/process",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "process"]
+            }
+          }
+        },
+        {
+          "name": "4. Get User Payment History (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response is an array\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(Array.isArray(jsonData)).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments"]
+            }
+          }
+        },
+        {
+          "name": "5. Get Transaction Details (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Transaction ID matches\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.transactionId).to.eql(pm.collectionVariables.get(\"transactionId\"));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/{{transactionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "{{transactionId}}"]
+            }
+          }
+        },
+        {
+          "name": "6. Download Receipt (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Receipt contains receiptNumber and issuedAt\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.receiptNumber).to.not.be.empty;",
+                  "    pm.expect(jsonData.issuedAt).to.not.be.empty;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/{{transactionId}}/receipt",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "{{transactionId}}", "receipt"]
+            }
+          }
+        },
+        {
+          "name": "7. Refund Transaction - Admin (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Transaction status is now REFUNDED\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.eql(\"REFUNDED\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/{{transactionId}}/refund",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "{{transactionId}}", "refund"]
             }
           }
         }

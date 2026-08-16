@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: payment-service
+  config:
+    import: optional:configserver:http://localhost:8888
   datasource:
     url: jdbc:postgresql://localhost:5432/spms_payments
     username: spms_admin
@@ -34,12 +36,10 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
 
-# JWT Verification for Payment Service (Zero Trust ADR-007)
 jwt:
   public-key-path: classpath:spms-jwt-public.pem
   issuer: spms-user-service
 
-# Messaging
 spms:
   rabbitmq:
     exchange: spms.events
