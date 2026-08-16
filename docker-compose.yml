@@ -1,12 +1,14 @@
 services:
+  # ==============================================================================
+  # Infrastructure Services
+  # ==============================================================================
+
   postgres:
     image: postgis/postgis:16-3.4
     container_name: spms_postgres
     environment:
       POSTGRES_USER: spms_admin
       POSTGRES_PASSWORD: spms_password
-      # Databases for other services will be created by Spring Boot / init scripts, 
-      # but we can set a default one here or rely on init scripts.
     ports:
       - "5432:5432"
     volumes:
@@ -17,6 +19,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - spms-network
 
   redis:
     image: redis:7-alpine
@@ -30,6 +34,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - spms-network
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
@@ -47,6 +53,200 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - spms-network
+
+  # ==============================================================================
+  # Spring Cloud Core Infrastructure
+  # ==============================================================================
+
+  config-server:
+    build:
+      context: ./spms/config-server
+      dockerfile: Dockerfile
+    container_name: spms_config_server
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./spms-config-repo:/app/spms-config-repo
+    environment:
+      SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS: "file:/app/spms-config-repo,file:./spms-config-repo,classpath:/config"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8888/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - spms-network
+
+  eureka-server:
+    build:
+      context: ./spms/eureka-server
+      dockerfile: Dockerfile
+    container_name: spms_eureka_server
+    ports:
+      - "8761:8761"
+    environment:
+      SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
+    depends_on:
+      config-server:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8761/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - spms-network
+
+  api-gateway:
+    build:
+      context: ./spms/api-gateway
+      dockerfile: Dockerfile
+    container_name: spms_api_gateway
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://eureka-server:8761/eureka/"
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      config-server:
+        condition: service_started
+    networks:
+      - spms-network
+
+  # ==============================================================================
+  # Microservices
+  # ==============================================================================
+
+  user-service:
+    build:
+      context: ./spms/user-service
+      dockerfile: Dockerfile
+    container_name: spms_user_service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://eureka-server:8761/eureka/"
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres:5432/spms_users"
+      SPRING_DATA_REDIS_HOST: "redis"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      config-server:
+        condition: service_started
+    networks:
+      - spms-network
+
+  vehicle-service:
+    build:
+      context: ./spms/vehicle-service
+      dockerfile: Dockerfile
+    container_name: spms_vehicle_service
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: "3001"
+      NODE_ENV: "production"
+      DB_HOST: "postgres"
+      DB_PORT: "5432"
+      DB_USERNAME: "spms_admin"
+      DB_PASSWORD: "spms_password"
+      DB_DATABASE: "spms_vehicles"
+      EUREKA_HOST: "eureka-server"
+      EUREKA_PORT: "8761"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    networks:
+      - spms-network
+
+  parking-service:
+    build:
+      context: ./spms/parking-service
+      dockerfile: Dockerfile
+    container_name: spms_parking_service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://eureka-server:8761/eureka/"
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres:5432/spms_parking"
+      SPRING_DATA_REDIS_HOST: "redis"
+      SPRING_RABBITMQ_HOST: "rabbitmq"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      config-server:
+        condition: service_started
+    networks:
+      - spms-network
+
+  payment-service:
+    build:
+      context: ./spms/payment-service
+      dockerfile: Dockerfile
+    container_name: spms_payment_service
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://eureka-server:8761/eureka/"
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres:5432/spms_payments"
+      SPRING_RABBITMQ_HOST: "rabbitmq"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      config-server:
+        condition: service_started
+    networks:
+      - spms-network
+
+  notification-service:
+    build:
+      context: ./spms/notification-service
+      dockerfile: Dockerfile
+    container_name: spms_notification_service
+    ports:
+      - "8085:8085"
+    environment:
+      PORT: "8085"
+      GIN_MODE: "release"
+      RABBITMQ_URL: "amqp://spms_admin:spms_password@rabbitmq:5672/"
+      RABBITMQ_EXCHANGE: "spms.events"
+      RABBITMQ_QUEUE: "notification.queue"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - spms-network
+
+# ==============================================================================
+# Networks & Volumes
+# ==============================================================================
+
+networks:
+  spms-network:
+    driver: bridge
 
 volumes:
   postgres_data:

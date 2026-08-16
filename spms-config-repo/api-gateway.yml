@@ -1,0 +1,57 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
+              - OPTIONS
+            allowedHeaders: "*"
+      routes:
+        - id: user-service
+          uri: lb://USER-SERVICE
+          predicates:
+            - Path=/api/users/**
+        - id: vehicle-service
+          uri: lb://VEHICLE-SERVICE
+          predicates:
+            - Path=/api/vehicles/**
+        - id: parking-service
+          uri: lb://PARKING-SERVICE
+          predicates:
+            - Path=/api/parking/**
+        - id: payment-service
+          uri: lb://PAYMENT-SERVICE
+          predicates:
+            - Path=/api/payments/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+# RSA Asymmetric Public Key for verification across all services
+jwt:
+  public-key-path: classpath:spms-jwt-public.pem
+  issuer: spms-user-service
+
+# Public endpoints (bypasses Spring Security authentication)
+gateway:
+  public-paths:
+    - /api/users/register
+    - /api/users/login
+    - /api/users/refresh
+    - /v3/api-docs/**
+    - /swagger-ui/**
+    - /swagger-ui.html
