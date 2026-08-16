@@ -3,26 +3,32 @@ package main
 import (
 	"log"
 
-	"github.com/gin-gonic/gin"
 	"notification-service/internal/config"
+	"notification-service/internal/consumer"
+	"notification-service/internal/handler"
+	"notification-service/internal/server"
 )
 
 func main() {
+	// 1. Load configuration
 	cfg := config.LoadConfig()
+	log.Printf("[BOOT]  Notification Service starting — port=%s, exchange=%s, queue=%s",
+		cfg.Port, cfg.RabbitMQExchange, cfg.RabbitMQQueue)
 
-	gin.SetMode(cfg.GinMode)
-	router := gin.Default()
+	// 2. Initialize shared stats (thread-safe atomic counters)
+	stats := &handler.Stats{}
 
-	// Scaffolding Health Check
-	router.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"status":  "ok",
-			"service": "notification-service",
-		})
-	})
+	// 3. Start RabbitMQ consumer in a background goroutine
+	//       It blocks internally, retrying on connection failure.
+	go func() {
+		c := consumer.New(cfg.RabbitMQURL, cfg.RabbitMQExchange, cfg.RabbitMQQueue, stats)
+		c.Start() // never returns under normal operation
+	}()
 
-	log.Printf("Notification Service starting on port %s...", cfg.Port)
-	if err := router.Run(":" + cfg.Port); err != nil {
-		log.Fatalf("Failed to run server: %v", err)
+	// 3. Start Gin HTTP server (blocks)
+	srv := server.New(cfg.Port, stats)
+	log.Printf("[BOOT]  HTTP server listening on :%s", cfg.Port)
+	if err := srv.Run(); err != nil {
+		log.Fatalf("[FATAL] HTTP server failed: %v", err)
 	}
 }
