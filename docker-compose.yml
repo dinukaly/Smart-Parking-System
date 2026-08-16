@@ -67,6 +67,10 @@ services:
     container_name: spms_config_server
     ports:
       - "8888:8888"
+    volumes:
+      - ./spms-config-repo:/app/spms-config-repo
+    environment:
+      SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS: "file:/app/spms-config-repo,file:./spms-config-repo,classpath:/config"
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost:8888/actuator/health || exit 1"]
       interval: 10s

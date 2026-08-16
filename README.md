@@ -65,6 +65,27 @@ An enterprise-grade, cloud-native microservice architecture designed for finding
 
 ---
 
+## ⚙️ Centralized Configuration Repository (`spms-config-repo`)
+
+All microservices fetch externalized configuration from the **Spring Cloud Config Server** (Port: `8888`), which loads centralized YAML files from the [`spms-config-repo/`](./spms-config-repo) repository:
+
+| Service | Configuration File | Key Settings Managed |
+|---|---|---|
+| **API Gateway** | [`api-gateway.yml`](./spms-config-repo/api-gateway.yml) | Reactive dynamic routing, CORS policy, public auth whitelists |
+| **Eureka Server** | [`eureka-server.yml`](./spms-config-repo/eureka-server.yml) | Service discovery registry settings, eviction timeouts |
+| **User Service** | [`user-service.yml`](./spms-config-repo/user-service.yml) | PostgreSQL DB credentials, RSA JWT Keystore paths, JPA settings |
+| **Vehicle Service** | [`vehicle-service.yml`](./spms-config-repo/vehicle-service.yml) | PostgreSQL DB connection, NestJS port configuration |
+| **Parking Service** | [`parking-service.yml`](./spms-config-repo/parking-service.yml) | PostGIS spatial DB connection, Redis cache TTL, RabbitMQ exchange |
+| **Payment Service** | [`payment-service.yml`](./spms-config-repo/payment-service.yml) | PostgreSQL DB connection, RabbitMQ payment events |
+| **Notification Service** | [`notification-service.yml`](./spms-config-repo/notification-service.yml) | SMTP Mail credentials, RabbitMQ notification queues |
+
+**How It Works:**
+1. On startup, the Spring Cloud Config Server automatically loads YAML definitions from `spms-config-repo/`.
+2. Microservices import their environment configuration at startup via `spring.config.import=optional:configserver:http://localhost:8888`.
+3. In Docker Compose, the repository is mounted to `/app/spms-config-repo` so configuration changes apply without rebuilding images.
+
+---
+
 ## 🔒 Security Architecture (Zero-Trust)
 
 - **Asymmetric Signing (RS256)**: Tokens are signed with a 2048-bit RSA Private Key held exclusively by the **User Service**.
