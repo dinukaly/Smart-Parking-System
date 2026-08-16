@@ -6,9 +6,10 @@ import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.GenericJacksonJsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -16,10 +17,17 @@ import java.util.Map;
 
 /**
  * Redis Configuration for Parking Service.
- * Configures RedisTemplate and CacheManager for parking availability caching as per ADR-006.
+ * Configures RedisTemplate and CacheManager for parking availability caching.
  */
 @Configuration
 public class RedisConfig {
+
+    /**
+     * Creates a Jackson 3 JsonMapper for Redis serialization.
+     */
+    private JsonMapper jsonMapper() {
+        return JsonMapper.builder().build();
+    }
 
     @Bean
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
@@ -27,7 +35,7 @@ public class RedisConfig {
         template.setConnectionFactory(connectionFactory);
 
         StringRedisSerializer stringSerializer = new StringRedisSerializer();
-        GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer();
+        GenericJacksonJsonRedisSerializer jsonSerializer = new GenericJacksonJsonRedisSerializer(jsonMapper());
 
         template.setKeySerializer(stringSerializer);
         template.setValueSerializer(jsonSerializer);
@@ -46,7 +54,8 @@ public class RedisConfig {
                 .serializeKeysWith(
                         RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
                 .serializeValuesWith(
-                        RedisSerializationContext.SerializationPair.fromSerializer(new GenericJackson2JsonRedisSerializer()));
+                        RedisSerializationContext.SerializationPair.fromSerializer(
+                                new GenericJacksonJsonRedisSerializer(jsonMapper())));
     }
 
     @Bean
