@@ -109,6 +109,7 @@ export class VehiclesController {
   }
 
   @Post(':id/entry')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Simulate vehicle entry',
     description:
@@ -125,6 +126,7 @@ export class VehiclesController {
   }
 
   @Post(':id/exit')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Simulate vehicle exit',
     description:
