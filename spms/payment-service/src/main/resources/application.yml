@@ -1,5 +1,45 @@
+server:
+  port: 8084
+
 spring:
   application:
     name: payment-service
   config:
     import: optional:configserver:http://localhost:8888
+  datasource:
+    url: jdbc:postgresql://localhost:5432/spms_payments
+    username: spms_admin
+    password: spms_password
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+jwt:
+  public-key-path: classpath:spms-jwt-public.pem
+  issuer: spms-user-service
+
+spms:
+  rabbitmq:
+    exchange: spms.events
