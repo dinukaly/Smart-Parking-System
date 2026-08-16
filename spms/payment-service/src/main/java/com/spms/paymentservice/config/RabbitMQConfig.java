@@ -9,6 +9,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * RabbitMQ Configuration for Payment Service.
+ * Uses the shared spms.events Topic Exchange and JSON serialization.
+ */
 @Configuration
 public class RabbitMQConfig {
 
@@ -16,7 +20,7 @@ public class RabbitMQConfig {
     private String exchangeName;
 
     @Bean
-    public TopicExchange spmsExchange() {
+    public TopicExchange spmsEventsExchange() {
         return new TopicExchange(exchangeName, true, false);
     }
 
@@ -26,9 +30,9 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory, MessageConverter jsonMessageConverter) {
-        RabbitTemplate template = new RabbitTemplate(connectionFactory);
-        template.setMessageConverter(jsonMessageConverter);
-        return template;
+    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
+        RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
+        rabbitTemplate.setMessageConverter(jsonMessageConverter());
+        return rabbitTemplate;
     }
 }
