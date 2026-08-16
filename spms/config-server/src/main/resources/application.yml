@@ -10,7 +10,11 @@ spring:
     config:
       server:
         native:
-          search-locations: classpath:/config
+          search-locations:
+            - file:../../spms-config-repo
+            - file:../spms-config-repo
+            - file:./spms-config-repo
+            - classpath:/config
 
 eureka:
   client:
