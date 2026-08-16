@@ -153,6 +153,36 @@ All microservices dynamically discovered and healthy:
 
 ---
 
+## 🔮 Future Expansion & Planned Features (AI Service)
+
+The architecture is designed to be easily extensible. An upcoming **Smart Parking AI Service** will connect to the existing ecosystem asynchronously via RabbitMQ without requiring code changes to any existing microservice:
+
+```
+                   RabbitMQ (`spms.events`)
+                               │
+                 ┌─────────────┴─────────────┐
+                 │                           │
+       Notification Service      Smart Parking AI Service
+             Go (Gin)                Python (FastAPI)
+                                             │
+                                      ┌──────┴──────┐
+                                      │ Features    │
+                                      │ • Occupancy │
+                                      │   prediction│
+                                      │ • Dynamic   │
+                                      │   pricing   │
+                                      │ • Peak-hour │
+                                      │   analysis  │
+                                      └─────────────┘
+```
+
+### Planned AI Capabilities:
+- **Occupancy Prediction**: Machine learning time-series models (e.g., Prophet / LSTM) to forecast space availability by zone, day of the week, and weather.
+- **Dynamic Pricing Engine**: Automated pricing adjustments based on real-time occupancy rates, special events, and peak demand hours.
+- **Parking Spot Owner Insights**: Analytics dashboards providing spot utilization, revenue forecasting, and churn analysis.
+
+---
+
 ## 📜 License
 
 This project is licensed under the Apache 2.0 License.
