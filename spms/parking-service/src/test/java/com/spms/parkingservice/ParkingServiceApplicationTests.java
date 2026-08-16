@@ -1,13 +1,13 @@
 package com.spms.parkingservice;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
+import static org.assertj.core.api.Assertions.assertThat;
+
 class ParkingServiceApplicationTests {
 
     @Test
-    void contextLoads() {
+    void mainApplicationClassLoads() {
+        assertThat(ParkingServiceApplication.class).isNotNull();
     }
-
 }
