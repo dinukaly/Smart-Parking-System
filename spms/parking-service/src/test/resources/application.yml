@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: parking-service
+  cloud:
+    config:
+      enabled: false
+    discovery:
+      enabled: false
+  datasource:
+    url: jdbc:postgresql://localhost:5432/spms_parking
+    username: spms_user
+    password: spms_password
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        dialect: org.hibernate.spatial.dialect.postgis.PostgisPG95Dialect
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  rabbitmq:
+    host: localhost
+    port: 5672
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+spms:
+  jwt:
+    public-key-path: classpath:spms-jwt-public.pem
+  rabbitmq:
+    exchange: spms.events

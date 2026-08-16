@@ -1085,6 +1085,562 @@
           }
         }
       ]
+    },
+    {
+      "name": "Parking Service",
+      "item": [
+        {
+          "name": "1. Create Parking Space - Owner (201 Created)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Parking space created and spaceId saved\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.expect(jsonData.name).to.eql(\"Colombo City Central - Spot 01\");",
+                  "    pm.expect(jsonData.status).to.eql(\"AVAILABLE\");",
+                  "    pm.expect(jsonData.location.city).to.eql(\"Colombo\");",
+                  "    pm.collectionVariables.set(\"parkingSpaceId\", jsonData.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Colombo City Central - Spot 01\",\n  \"description\": \"Covered secure parking with CCTV\",\n  \"city\": \"Colombo\",\n  \"address\": \"45 Galle Road, Colombo 03\",\n  \"zone\": \"Zone A\",\n  \"latitude\": 6.9271,\n  \"longitude\": 79.8612,\n  \"spaceType\": \"STANDARD\",\n  \"vehicleTypes\": [\"CAR\"],\n  \"pricePerHour\": 3.50,\n  \"features\": [\"covered\", \"cctv\", \"24h\"],\n  \"iotEnabled\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/parking/spaces",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "parking", "spaces"]
+            }
+          }
+        },
+        {
+          "name": "2. Search Parking Spaces - Public (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Search results contains paged response\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('total');",
+                  "    pm.expect(jsonData).to.have.property('data');",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/parking/spaces?city=Colombo&status=AVAILABLE&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "parking", "spaces"],
+              "query": [
+                {
+                  "key": "city",
+                  "value": "Colombo"
+                },
+                {
+                  "key": "status",
+                  "value": "AVAILABLE"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "3. Search Spaces Proximity PostGIS - Public (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Spatial search returns spaces within radius\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('data');",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/parking/spaces?latitude=6.9271&longitude=79.8612&radius=5000&page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "parking", "spaces"],
+              "query": [
+                {
+                  "key": "latitude",
+                  "value": "6.9271"
+                },
+                {
+                  "key": "longitude",
+                  "value": "79.8612"
+                },
+                {
+                  "key": "radius",
+                  "value": "5000"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "4. Get Parking Space By ID - Public (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Details match created space\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.id).to.eql(pm.collectionVariables.get(\"parkingSpaceId\"));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/parking/spaces/{{parkingSpaceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "parking", "spaces", "{{parkingSpaceId}}"]
+            }
+          }
+        },
+        {
+          "name": "5. Update Parking Space Details - Owner (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Price updated successfully\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.pricePerHour).to.eql(4.00);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pricePerHour\": 4.00,\n  \"description\": \"Updated description with EV charger nearby\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/parking/spaces/{{parkingSpaceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "parking", "spaces", "{{parkingSpaceId}}"]
+            }
+          }
+        },
+        {
+          "name": "6. Update Space Status - Owner (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Status changed to AVAILABLE\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.eql(\"AVAILABLE\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"AVAILABLE\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/parking/spaces/{{parkingSpaceId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "parking", "spaces", "{{parkingSpaceId}}", "status"]
+            }
+          }
+        },
+        {
+          "name": "7. Create Reservation - Driver (201 Created)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Reservation created and reservationId saved\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.expect(jsonData.status).to.eql(\"ACTIVE\");",
+                  "    pm.collectionVariables.set(\"reservationId\", jsonData.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"parkingSpaceId\": \"{{parkingSpaceId}}\",\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"startTime\": \"2026-08-20T10:00:00Z\",\n  \"endTime\": \"2026-08-20T12:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/parking/reservations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "parking", "reservations"]
+            }
+          }
+        },
+        {
+          "name": "8. List User Reservations - Driver (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains user reservations\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('data');",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/parking/reservations?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "parking", "reservations"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "9. Get Reservation Details - Driver (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Matches requested reservation ID\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.id).to.eql(pm.collectionVariables.get(\"reservationId\"));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/parking/reservations/{{reservationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "parking", "reservations", "{{reservationId}}"]
+            }
+          }
+        },
+        {
+          "name": "10. Simulate IoT Entry Event - Owner (201 Created)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"IoT event recorded\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.eventType).to.eql(\"ENTRY\");",
+                  "    pm.expect(jsonData.licensePlate).to.eql(\"WP-CAB-1234\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventType\": \"ENTRY\",\n  \"licensePlate\": \"WP-CAB-1234\",\n  \"sensorId\": \"SENSOR-001\",\n  \"confidence\": 0.995\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/parking/spaces/{{parkingSpaceId}}/iot",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "parking", "spaces", "{{parkingSpaceId}}", "iot"]
+            }
+          }
+        },
+        {
+          "name": "11. Cancel Reservation - Driver (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Reservation marked CANCELLED\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.eql(\"CANCELLED\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/parking/reservations/{{reservationId}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "parking", "reservations", "{{reservationId}}", "cancel"]
+            }
+          }
+        },
+        {
+          "name": "12. Delete Parking Space - Owner (204 No Content)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 204 No Content\", function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/parking/spaces/{{parkingSpaceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "parking", "spaces", "{{parkingSpaceId}}"]
+            }
+          }
+        }
+      ]
     }
   ]
 }
